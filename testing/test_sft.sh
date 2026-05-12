@@ -232,10 +232,11 @@ done
 if [ "$ICE_OK" -ne 1 ]; then
     ICE_END_MS=$(now_ms)
     ICE_MS=$((ICE_END_MS - ICE_START_MS))
-    log "ICE did not complete within ${ICE_MS} ms."
+    log "Terminating UDP Listener..."
+    kill "$SOCAT_PID"
+    die "ICE did not complete within ${ICE_MS} ms."
 fi
  
-sleep 1
-
 log "Terminating UDP Listener..."
 kill "$SOCAT_PID"
+
