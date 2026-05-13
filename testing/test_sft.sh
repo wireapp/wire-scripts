@@ -44,7 +44,7 @@ http_post_json_timed() {
     headers_file="$WORK/${name}.headers"
     meta_file="$WORK/${name}.meta"
 
-    log "$name → $url"
+    log "$name → $json → $url"
 
     set +e
     curl -sS -L --max-time 30 \
