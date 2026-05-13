@@ -139,7 +139,7 @@ while true; do
         log "← Binding Request      txn=${rxn_id}"
         RESP_HEX=$(build_stun_packet "0101" "$rxn_id" "$XMA" "$LOCAL_ICE_PWD")
         log "→ Binding Success Resp txn=${rxn_id}"
-        printf '%s' "$RESP_HEX" | xxd -r -p
+        printf '%s' "$RESP_HEX" | hex2bin
 	## This is the last packet we want to handle.
         touch "${WORK}/ice_success"
         ;;
