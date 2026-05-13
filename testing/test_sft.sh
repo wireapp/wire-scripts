@@ -17,7 +17,17 @@
 #
 # NOTE: accepts a conversation ID on the command line, which is not (yet) useful.
 #
-# DEPENDENCIES: curl, jq, uuidgen, openssl, socat, xxd, gzip, (ip || ipconfig), dd
+# NOTE: If socat is not available, will skip the UDP portion.
+#
+# MACOS: This supports MacOS, but requires jq to be installed.
+# I installed this via:
+# ```
+# sudo mkdir -p /usr/local/bin
+# curl -Lo /usr/local/bin/jq https://github.com/jqlang/jq/releases/latest/download/jq-macos-amd64
+# chmod +x /usr/local/bin/jq
+# ```
+#
+# DEPENDENCIES: curl, jq, uuidgen, openssl, gzip, (ip || ipconfig), dd
  
 set -euo pipefail
  
@@ -93,7 +103,7 @@ http_post_json_timed() {
 # ── dependency checks ──────────────────────────────────────────────────────────
 
 # Generic dependencies.
-for cmd in curl jq uuidgen openssl socat xxd gzip dd; do
+for cmd in curl jq uuidgen openssl xxd gzip dd; do
     command -v "$cmd" &>/dev/null || die -1 "'$cmd' required but not found."
 done
 
