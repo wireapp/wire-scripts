@@ -173,9 +173,13 @@ SETUP_JSON=$(jq -cn \
         --arg src_userid   "$USER_ID" \
         --arg src_clientid "$CLIENT_ID" \
         --arg sdp          "$SDP" \
-        '{"version":"3.0",type:"SETUP", sessid:$sessid,
-          src_userid:$src_userid, src_clientid:$src_clientid,
-          resp:true, sdp:$sdp, props:{"videosend":"false","screensend":"false","audiocbr":"false","muted":"true"}}')
+        '{"version":"3.0",type:"SETUP", "sessid":$sessid,
+          "src_userid":$src_userid, "src_clientid":$src_clientid,
+          "resp":true,
+          "sdp":$sdp, "props":{"videosend":"false","screensend":"false","audiocbr":"false","muted":"true"}}')
+
+# Test form: constructs the URL using the original URL, not the returned one. works on WIAB, unreliable in prod?
+# SETUP_RESP=$(http_post_json_timed "SETUP" "${SFT_URL%/}/sft/${CONV_ID}" "$SETUP_JSON")
 
 # Real form: take the URL handed to us, and use it properly.
 SETUP_RESP=$(http_post_json_timed "SETUP" "${REMOTE_SFT}/sft/${CONV_ID}" "$SETUP_JSON")
