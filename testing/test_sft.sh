@@ -114,7 +114,7 @@ else
     die -1 "neither IP or IPCONFIG is available."
 fi
 
-log "deps ok  curl=$(curl -V | awk 'NR==1{print $2}')  socat=$(socat -V 2>&1 | awk '/socat version/{print $3}')"
+log "deps ok  curl=$(curl -V | awk 'NR==1{print $2}')"
 
 # ── ICE credentials ────────────────────────────────────────────────────────────
  
@@ -232,6 +232,8 @@ log "Remote ICE: ufrag=$REMOTE_UFRAG  $REMOTE_IP:$REMOTE_PORT"
 if command -v "socat" &>/dev/null; then
 
 DISPATCHER="$(cd "$(dirname "$0")" && pwd)/stun_dispatcher.sh"
+
+log "deps ok  socat=$(socat -V 2>&1 | awk '/socat version/{print $3}')"
 [ -x "$DISPATCHER" ] || die -2 "stun_dispatcher.sh not found or not executable at: $DISPATCHER"
 
 # ── step 3: single connected UDP socket + dispatcher ──────────────────────────
