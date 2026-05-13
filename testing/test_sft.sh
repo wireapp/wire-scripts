@@ -128,7 +128,7 @@ CONFCONN_JSON=$(jq -cn \
         --arg sessid       "$SESSION_ID" \
         --arg src_userid   "$USER_ID" \
         --arg src_clientid "$CLIENT_ID" \
-        '{"version":"3.0","type":"CONFCONN", "sessid":"$sessid",
+        '{"version":"3.0","type":"CONFCONN", "sessid":$sessid,
           "src_userid":$src_userid, "src_clientid":$src_clientid,
           "resp":false,
           "toolver":"0.0.0", "selective_audio":false, "selective_video":false}')
