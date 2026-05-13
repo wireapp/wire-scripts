@@ -103,15 +103,15 @@ LOCAL_ICE_UFRAG=$(openssl rand -hex 4)
 LOCAL_ICE_PWD=$( openssl rand -hex 12)
  
 # ── DTLS certificate fingerprint ───────────────────────────────────────────────
- 
+
 openssl req -newkey rsa:2048 -nodes -x509 -days 1 \
     -out "$WORK/dtls.pem" -keyout "$WORK/dtls.key" \
     -subj "/CN=sft-client" 2>/dev/null
 FINGERPRINT=$(openssl x509 -in "$WORK/dtls.pem" -fingerprint -sha256 -noout \
     | sed 's/.*=//' | tr '[:upper:]' '[:lower:]')
- 
+
 # ── local address ──────────────────────────────────────────────────────────────
- 
+
 export LOCAL_IP LOCAL_UDP_PORT
 LOCAL_IP=$(ip route get 1 | awk '{print $7; exit}')
 LOCAL_UDP_PORT=$(shuf -i 49152-65535 -n 1)
