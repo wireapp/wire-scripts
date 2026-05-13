@@ -27,8 +27,11 @@ log() { echo "[$(date -u +%T)] stun: $*" >&2; }
 # the full count is satisfied or EOF is reached.
  
 read_hex() {
-    dd bs="$1" count=1 iflag=fullblock 2>/dev/null | xxd -p | tr -d '\n'
+    dd bs="$1" count=1 iflag=fullblock 2>/dev/null | hexdump -v -e '1/1 "%02x"' | tr -d '\n'
 }
+
+hex2bin() { perl -e 'local $/; my $h = <STDIN>; $h =~ s/\s//g; print pack "H*", $h'; }
+bin2hex() { perl -e 'local $/; $d=<STDIN>; print unpack("H*", $d)'; }
  
 # ── build a STUN attribute block and append MESSAGE-INTEGRITY + FINGERPRINT ───
 # Args: $1 = msg_type_hex (4 chars), $2 = txn_id_hex (24 chars),
@@ -47,19 +50,18 @@ build_stun_packet() {
     # MESSAGE-INTEGRITY: HMAC input uses length that includes MI but not FP
     len_with_mi=$(( attrs_bytes + mi_total ))
     msg_for_mi="${msg_type}$(printf '%04x' $len_with_mi)2112a442${txn_id}${attrs}"
- 
-    hmac=$(printf '%s' "$msg_for_mi" | xxd -r -p \
+
+    hmac=$(printf '%s' "$msg_for_mi" | hex2bin \
         | openssl dgst -sha1 -hmac "$hmac_key" -binary \
-        | xxd -p | tr -d '\n')
+        | bin2hex | tr -d '\n')
     mi_attr="00080014${hmac}"
- 
     # FINGERPRINT: CRC32 of message up to (not including) FP, with FP in length
     len_with_fp=$(( attrs_bytes + mi_total + fp_total ))
     msg_pre_fp="${msg_type}$(printf '%04x' $len_with_fp)2112a442${txn_id}${attrs}${mi_attr}"
  
     # gzip embeds standard CRC32 (little-endian) in its last 8 bytes
-    crc_le=$(printf '%s' "$msg_pre_fp" | xxd -r -p \
-        | gzip -c | tail -c 8 | head -c 4 | xxd -p | tr -d '\n')
+    crc_le=$(printf '%s' "$msg_pre_fp" | hex2bin \
+        | gzip -c | tail -c 8 | head -c 4 | hexdump -v -e '1/1 "%02x"' | tr -d '\n')
     crc_be="${crc_le:6:2}${crc_le:4:2}${crc_le:2:2}${crc_le:0:2}"
     fp_val=$(printf '%08x' $(( 16#$crc_be ^ 0x5354554e )))
  
@@ -80,7 +82,7 @@ pad_hex() {
 }
 
 USERNAME="${REMOTE_UFRAG}:${LOCAL_ICE_UFRAG}"
-UN_HEX=$(printf '%s' "$USERNAME" | xxd -p | tr -d '\n')
+UN_HEX=$(printf '%s' "$USERNAME" | bin2hex | tr -d '\n')
 UN_LEN=${#USERNAME}
 UN_PAD=$(( (4 - (UN_LEN % 4)) % 4 ))
 UN_ATTR="0006$(printf '%04x' $UN_LEN)${UN_HEX}$(pad_hex "$UN_PAD")"
@@ -92,7 +94,7 @@ ATTRS="${UN_ATTR}${PRIORITY_ATTR}${ICE_ROLE_ATTR}"
  
 REQUEST_HEX=$(build_stun_packet "0001" "$TXN" "$ATTRS" "$REMOTE_PWD")
 log "→ Binding Request      txn=${TXN}"
-printf '%s' "$REQUEST_HEX" | xxd -r -p   # one write() = one UDP datagram
+printf '%s' "$REQUEST_HEX" | hex2bin   # one write() = one UDP datagram
  
 # ── 2. Packet read loop ────────────────────────────────────────────────────────
 # STUN fixed header is always 20 bytes:

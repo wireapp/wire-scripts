@@ -27,10 +27,10 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"; kill "${SOCAT_PID:-}" 2>/dev/null || true' EXIT
  
 # ── helpers ────────────────────────────────────────────────────────────────────
- 
+
 log() { echo "[$(date -u +%T)] $*" >&2; }
 die() { echo "ERROR: $2" >&2; exit $1; }
-now_ms() { perl -MTime::HiRes -e 'printf "%d\n", time()*1000'; }
+now_ms() { perl -MTime::HiRes -e 'printf "%.3f\n", Time::HiRes::time()' | tr -d '.'; }
 http_post_json_timed() {
     local name="$1"
     local url="$2"
@@ -94,7 +94,7 @@ for cmd in curl jq uuidgen openssl socat xxd gzip dd; do
     command -v "$cmd" &>/dev/null || die -1 "'$cmd' required but not found."
 done
 
-if command -v "ip" &>/dev/null || command -v "ipconfig" $> /dev/null ; then
+if command -v "ip" &>/dev/null || command -v "ipconfig" &> /dev/null ; then
     log 'deps ok (ip or ipconfig available)'
 else
     die -1 "neither IP or IPCONFIG is available."
