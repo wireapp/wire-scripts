@@ -96,7 +96,7 @@ for cmd in curl jq uuidgen openssl socat xxd gzip dd; do
 done
 
 # things we can work around.
-if command -v "ip" &>/dev/null || command -v "ipconfig" &> /dev/null ; then
+if command -v "ip" &>/dev/null || command -v "ipconfig" &>/dev/null ; then
     log 'deps ok (ip or ipconfig available)'
 else
     die -1 "neither IP or IPCONFIG is available."
@@ -104,9 +104,6 @@ fi
 
 log "deps ok  curl=$(curl -V | awk 'NR==1{print $2}')  socat=$(socat -V 2>&1 | awk '/socat version/{print $3}')"
 
-DISPATCHER="$(cd "$(dirname "$0")" && pwd)/stun_dispatcher.sh"
-[ -x "$DISPATCHER" ] || die -2 "stun_dispatcher.sh not found or not executable at: $DISPATCHER"
- 
 # ── ICE credentials ────────────────────────────────────────────────────────────
  
 export LOCAL_ICE_UFRAG LOCAL_ICE_PWD
@@ -220,7 +217,10 @@ read -r REMOTE_IP REMOTE_PORT < <(echo "$REMOTE_SDP" \
 log "Remote ICE: ufrag=$REMOTE_UFRAG  $REMOTE_IP:$REMOTE_PORT"
 
 # skip the rest of this file if we do not have socat.
-if command -v "socat" &> /dev/null; then
+if command -v "socat" &>/dev/null; then
+
+DISPATCHER="$(cd "$(dirname "$0")" && pwd)/stun_dispatcher.sh"
+[ -x "$DISPATCHER" ] || die -2 "stun_dispatcher.sh not found or not executable at: $DISPATCHER"
 
 # ── step 3: single connected UDP socket + dispatcher ──────────────────────────
 #
@@ -272,5 +272,5 @@ log "Terminating UDP Listener..."
 kill "$SOCAT_PID"
 
 else
-    log 'socat not found; UDP tests were not performed.'
+    log 'socat binary not found; UDP tests were not performed.'
 fi
