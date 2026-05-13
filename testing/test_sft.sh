@@ -15,7 +15,7 @@
 #   so every packet — responses to SFT's checks AND our own outbound
 #   Binding Request — carries source port LOCAL_UDP_PORT.
 #
-# DEPENDENCIES: curl, jq, uuidgen, openssl, socat, xxd, gzip, ip, shuf, dd
+# DEPENDENCIES: curl, jq, uuidgen, openssl, socat, xxd, gzip, (ip || ipconfig), dd
  
 set -euo pipefail
  
@@ -30,7 +30,7 @@ trap 'rm -rf "$WORK"; kill "${SOCAT_PID:-}" 2>/dev/null || true' EXIT
  
 log() { echo "[$(date -u +%T)] $*" >&2; }
 die() { echo "ERROR: $2" >&2; exit $1; }
-now_ms() { date +%s%3N; }
+now_ms() { perl -MTime::HiRes -e 'printf "%d\n", time()*1000'; }
 http_post_json_timed() {
     local name="$1"
     local url="$2"
@@ -90,9 +90,16 @@ http_post_json_timed() {
 
 # ── dependency checks ──────────────────────────────────────────────────────────
  
-for cmd in curl jq uuidgen openssl socat xxd gzip ip shuf dd; do
+for cmd in curl jq uuidgen openssl socat xxd gzip dd; do
     command -v "$cmd" &>/dev/null || die -1 "'$cmd' required but not found."
 done
+
+if [ $(command -v "ip" &>/dev/null) || $(command -v "ipconfig" $> /dev/null) ]; then
+    log 'deps ok (ip or ipconfig available)'
+else
+    die -1 "neither IP or IPCONFIG is available."
+fi
+
 log "deps ok  curl=$(curl -V | awk 'NR==1{print $2}')  socat=$(socat -V 2>&1 | awk '/socat version/{print $3}')"
 
 DISPATCHER="$(cd "$(dirname "$0")" && pwd)/stun_dispatcher.sh"
@@ -115,8 +122,17 @@ FINGERPRINT=$(openssl x509 -in "$WORK/dtls.pem" -fingerprint -sha256 -noout \
 # ── local address ──────────────────────────────────────────────────────────────
 
 export LOCAL_IP LOCAL_UDP_PORT
-LOCAL_IP=$(ip route get 1 | awk '{print $7; exit}')
-LOCAL_UDP_PORT=$(shuf -i 49152-65535 -n 1)
+# tries IP first, from linux, thes falls back to ipconfig for MacOS.
+LOCAL_IP=$(
+  if command -v ip >/dev/null 2>&1; then
+    ip -4 addr show $(ip route show default | awk '/default/ {print $5; exit}') | awk '/inet /{print $2}' | cut -d/ -f1
+  else
+    ipconfig getifaddr "$(route get 1 | awk '/interface:/ {print $2}')"
+  fi
+)
+
+# Random high‑port (49152–65535) without shuf
+LOCAL_UDP_PORT=$(( (0x$(openssl rand -hex 2) % (65535-49152+1)) + 49152 ))
  
 # ── step 1: CONFCONN ───────────────────────────────────────────────────────────
  
@@ -143,7 +159,7 @@ log "found remote SFT server: $REMOTE_SFT"
 
 # ── step 2: SETUP ──────────────────────────────────────────────────────────────
  
-SSRC=$(shuf -i 1-4294967295 -n 1)
+SSRC=$(openssl rand -hex 8)
 CNAME=$(openssl rand -hex 8)
  
 SDP="v=0
