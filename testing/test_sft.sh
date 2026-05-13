@@ -29,12 +29,13 @@ trap 'rm -rf "$WORK"; kill "${SOCAT_PID:-}" 2>/dev/null || true' EXIT
 # ── helpers ────────────────────────────────────────────────────────────────────
  
 log() { echo "[$(date -u +%T)] $*" >&2; }
-die() { echo "ERROR: $*" >&2; exit 1; }
+die() { echo "ERROR: $2" >&2; exit $1; }
 now_ms() { date +%s%3N; }
 http_post_json_timed() {
     local name="$1"
     local url="$2"
     local json="$3"
+    local diecode="$4"
 
     local body_file headers_file meta_file curl_rc http_code
     local time_namelookup time_connect time_appconnect time_pretransfer
@@ -51,7 +52,8 @@ http_post_json_timed() {
         -H "Content-Type: application/json" \
         -D "$headers_file" \
         -o "$body_file" \
-        -w $'http_code=%{http_code}\nurl_effective=%{url_effective}\ntime_namelookup=%{time_namelookup}\ntime_connect=%{time_connect}\ntime_appconnect=%{time_appconnect}\ntime_pretransfer=%{time_pretransfer}\ntime_starttransfer=%{time_starttransfer}\ntime_total=%{time_total}\n' \
+        -w $'http_code=%{http_code}\nurl_effective=%{url_effective}\ntime_namelookup=%{time_namelookup}\ntime_connect=%{time_connect}\n \
+             time_appconnect=%{time_appconnect}\ntime_pretransfer=%{time_pretransfer}\ntime_starttransfer=%{time_starttransfer}\ntime_total=%{time_total}\n' \
         -d "$json" \
         "$url" > "$meta_file"
     curl_rc=$?
@@ -80,7 +82,7 @@ http_post_json_timed() {
             sed 's/^/  /' "$body_file" >&2 || true
         fi
 
-        die "$name failed: curl_rc=$curl_rc http_code=$http_code total=${time_total}s"
+        die $diecode "$name failed: curl_rc=$curl_rc http_code=$http_code total=${time_total}s"
     fi
 
     cat "$body_file"
@@ -89,12 +91,12 @@ http_post_json_timed() {
 # ── dependency checks ──────────────────────────────────────────────────────────
  
 for cmd in curl jq uuidgen openssl socat xxd gzip ip shuf dd; do
-    command -v "$cmd" &>/dev/null || die "'$cmd' required but not found."
+    command -v "$cmd" &>/dev/null || die -1 "'$cmd' required but not found."
 done
 log "deps ok  curl=$(curl -V | awk 'NR==1{print $2}')  socat=$(socat -V 2>&1 | awk '/socat version/{print $3}')"
 
 DISPATCHER="$(cd "$(dirname "$0")" && pwd)/stun_dispatcher.sh"
-[ -x "$DISPATCHER" ] || die "stun_dispatcher.sh not found or not executable at: $DISPATCHER"
+[ -x "$DISPATCHER" ] || die -2 "stun_dispatcher.sh not found or not executable at: $DISPATCHER"
  
 # ── ICE credentials ────────────────────────────────────────────────────────────
  
@@ -133,10 +135,10 @@ CONFCONN_JSON=$(jq -cn \
           "resp":false,
           "toolver":"0.0.0", "selective_audio":false, "selective_video":false}')
  
-CONFCONN_RESP=$(http_post_json_timed "CONFCONN" "${SFT_URL%/}/sft/${CONV_ID}" "$CONFCONN_JSON")
+CONFCONN_RESP=$(http_post_json_timed "CONFCONN" "${SFT_URL%/}/sft/${CONV_ID}" "$CONFCONN_JSON" -3)
 
 REMOTE_SFT=$(echo "$CONFCONN_RESP" | jq -r '.url // empty')
-[ -n "$REMOTE_SFT" ] || die "No SFT in CONFCONN response."
+[ -n "$REMOTE_SFT" ] || die -4 "No SFT in CONFCONN response."
 log "found remote SFT server: $REMOTE_SFT"
 
 # ── step 2: SETUP ──────────────────────────────────────────────────────────────
@@ -179,24 +181,24 @@ SETUP_JSON=$(jq -cn \
           "sdp":$sdp, "props":{"videosend":"false","screensend":"false","audiocbr":"false","muted":"true"}}')
 
 # Test form: constructs the URL using the original URL, not the returned one. works on WIAB, unreliable in prod?
-# SETUP_RESP=$(http_post_json_timed "SETUP" "${SFT_URL%/}/sft/${CONV_ID}" "$SETUP_JSON")
+# SETUP_RESP=$(http_post_json_timed "SETUP" "${SFT_URL%/}/sft/${CONV_ID}" "$SETUP_JSON" -5)
 
 # Real form: take the URL handed to us, and use it properly.
-SETUP_RESP=$(http_post_json_timed "SETUP" "${REMOTE_SFT}/sft/${CONV_ID}" "$SETUP_JSON")
+SETUP_RESP=$(http_post_json_timed "SETUP" "${REMOTE_SFT}/sft/${CONV_ID}" "$SETUP_JSON" -5)
  
 # ── parse remote ICE from SDP answer ──────────────────────────────────────────
  
 REMOTE_SDP=$(echo "$CONFCONN_RESP" | jq -r '.sdp // .sdp_msg // empty')
-[ -n "$REMOTE_SDP" ] || die "No SDP in SETUP response."
- 
+[ -n "$REMOTE_SDP" ] || die -6 "No SDP in SETUP response."
+
 export REMOTE_UFRAG REMOTE_PWD REMOTE_IP REMOTE_PORT
 REMOTE_UFRAG=$(echo "$REMOTE_SDP" | awk -F: '/^a=ice-ufrag:/{print $2; exit}' | tr -d '[:space:]')
 REMOTE_PWD=$(  echo "$REMOTE_SDP" | awk -F: '/^a=ice-pwd:/{print $2;   exit}' | tr -d '[:space:]')
 read -r REMOTE_IP REMOTE_PORT < <(echo "$REMOTE_SDP" \
     | awk '/^a=candidate:/{print $5, $6; exit}')
- 
-[ -n "$REMOTE_IP"    ] || die "No candidate in SDP answer."
-[ -n "$REMOTE_UFRAG" ] || die "No ice-ufrag in SDP answer."
+
+[ -n "$REMOTE_IP"    ] || die -7 "No candidate in SDP answer."
+[ -n "$REMOTE_UFRAG" ] || die -8 "No ice-ufrag in SDP answer."
 log "Remote ICE: ufrag=$REMOTE_UFRAG  $REMOTE_IP:$REMOTE_PORT"
  
 # ── step 3: single connected UDP socket + dispatcher ──────────────────────────
@@ -243,7 +245,7 @@ if [ "$ICE_OK" -ne 1 ]; then
     ICE_MS=$((ICE_END_MS - ICE_START_MS))
     log "Terminating UDP Listener..."
     kill "$SOCAT_PID"
-    die "ICE did not complete within ${ICE_MS} ms."
+    die -9 "ICE did not complete within ${ICE_MS} ms."
 fi
  
 log "Terminating UDP Listener..."
