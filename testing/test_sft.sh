@@ -94,7 +94,7 @@ for cmd in curl jq uuidgen openssl socat xxd gzip dd; do
     command -v "$cmd" &>/dev/null || die -1 "'$cmd' required but not found."
 done
 
-if [ $(command -v "ip" &>/dev/null) || $(command -v "ipconfig" $> /dev/null) ]; then
+if command -v "ip" &>/dev/null || command -v "ipconfig" $> /dev/null ; then
     log 'deps ok (ip or ipconfig available)'
 else
     die -1 "neither IP or IPCONFIG is available."
