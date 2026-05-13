@@ -89,11 +89,13 @@ http_post_json_timed() {
 }
 
 # ── dependency checks ──────────────────────────────────────────────────────────
- 
+
+# Generic dependencies.
 for cmd in curl jq uuidgen openssl socat xxd gzip dd; do
     command -v "$cmd" &>/dev/null || die -1 "'$cmd' required but not found."
 done
 
+# things we can work around.
 if command -v "ip" &>/dev/null || command -v "ipconfig" &> /dev/null ; then
     log 'deps ok (ip or ipconfig available)'
 else
@@ -216,7 +218,10 @@ read -r REMOTE_IP REMOTE_PORT < <(echo "$REMOTE_SDP" \
 [ -n "$REMOTE_IP"    ] || die -7 "No candidate in SDP answer."
 [ -n "$REMOTE_UFRAG" ] || die -8 "No ice-ufrag in SDP answer."
 log "Remote ICE: ufrag=$REMOTE_UFRAG  $REMOTE_IP:$REMOTE_PORT"
- 
+
+# skip the rest of this file if we do not have socat.
+if command -v "socat" &> /dev/null; then
+
 # ── step 3: single connected UDP socket + dispatcher ──────────────────────────
 #
 # UDP4:REMOTE_IP:REMOTE_PORT  — connect() to the SFT's candidate.
@@ -263,7 +268,9 @@ if [ "$ICE_OK" -ne 1 ]; then
     kill "$SOCAT_PID"
     die -9 "ICE did not complete within ${ICE_MS} ms."
 fi
- 
 log "Terminating UDP Listener..."
 kill "$SOCAT_PID"
 
+else
+    log 'socat not found; UDP tests were not performed.'
+fi
