@@ -3,7 +3,7 @@
 #
 # USAGE:
 #   export SFT_URL="https://sft.example.com"
-#   ./sft_call.sh [conv-id]
+#   ./sft_call.sh
 #
 # ARCHITECTURE:
 #   After SETUP, socat opens one connected UDP socket:
@@ -14,6 +14,8 @@
 #   datagrams sent to the SFT.  Both directions share the same socket,
 #   so every packet — responses to SFT's checks AND our own outbound
 #   Binding Request — carries source port LOCAL_UDP_PORT.
+#
+# NOTE: accepts a conversation ID on the command line, which is not (yet) useful.
 #
 # DEPENDENCIES: curl, jq, uuidgen, openssl, socat, xxd, gzip, (ip || ipconfig), dd
  
