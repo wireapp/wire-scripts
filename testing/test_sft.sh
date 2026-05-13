@@ -135,6 +135,10 @@ CONFCONN_JSON=$(jq -cn \
  
 CONFCONN_RESP=$(http_post_json_timed "CONFCONN" "${SFT_URL%/}/sft/${CONV_ID}" "$CONFCONN_JSON")
 
+REMOTE_SFT=$(echo "$CONFCONN_RESP" | jq -r '.url // empty')
+[ -n "$REMOTE_SFT" ] || die "No SFT in CONFCONN response."
+log "found remote SFT server: $REMOTE_SFT"
+
 # ── step 2: SETUP ──────────────────────────────────────────────────────────────
  
 SSRC=$(shuf -i 1-4294967295 -n 1)
@@ -173,7 +177,8 @@ SETUP_JSON=$(jq -cn \
           src_userid:$src_userid, src_clientid:$src_clientid,
           resp:true, sdp:$sdp, props:{"videosend":"false","screensend":"false","audiocbr":"false","muted":"true"}}')
 
-SETUP_RESP=$(http_post_json_timed "SETUP" "${SFT_URL%/}/sft/${CONV_ID}" "$SETUP_JSON")
+# Real form: take the URL handed to us, and use it properly.
+SETUP_RESP=$(http_post_json_timed "SETUP" "${REMOTE_SFT}/sft/${CONV_ID}" "$SETUP_JSON")
  
 # ── parse remote ICE from SDP answer ──────────────────────────────────────────
  
