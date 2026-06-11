@@ -137,10 +137,20 @@ cert_days_left() {
     local not_after=$(timeout 8 openssl s_client -connect "${host}:${port}" -servername "$host" </dev/null 2>/dev/null \
         | openssl x509 -noout -enddate \
         | cut -d= -f2)
-    # perl parses RFC‑822 style dates irrespective of locale
-    local exp_epoch=$(perl -MTime::Piece -e 'print Time::Piece::strptime($ARGV[0], "%b %d %H:%M:%S %Y %Z")->epoch' "$not_after")
-    local now_epoch=$(date +%s)
-    echo $(( (exp_epoch - now_epoch) / 86400 ))
+
+    # openssl -enddate emits:  "Jun 15 12:00:00 2026 GMT"
+    # Single-digit days are space-padded: "Jun  5 12:00:00 2026 GMT"
+    # \s+ in the regex absorbs both forms.
+    perl -MTime::Local -e '
+        my %mon = (Jan=>0, Feb=>1, Mar=>2, Apr=>3, May=>4,  Jun=>5,
+                   Jul=>6, Aug=>7, Sep=>8, Oct=>9, Nov=>10, Dec=>11);
+        if ($ARGV[0] =~ /(\w{3})\s+(\d+)\s+(\d+):(\d+):(\d+)\s+(\d+)/) {
+            my $exp = Time::Local::timegm($5, $4, $3, $2, $mon{$1}, $6 - 1900);
+            printf "%d\n", ($exp - time) / 86400;
+        } else {
+            print "unknown\n";
+        }
+    ' "$not_after"
 }
 
 # Return 0 if the leaf cert's issuer contains needle (case-insensitive).
