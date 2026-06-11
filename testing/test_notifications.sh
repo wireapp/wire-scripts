@@ -134,17 +134,12 @@ cert_not_expired() {
 # Print the approximate days until the certificate on host:port expires.
 cert_days_left() {
     local host=$1 port=${2:-443}
-    local not_after
-    not_after=$(timeout 8 openssl s_client \
-        -connect "${host}:${port}" -servername "$host" \
-        </dev/null 2>&1 \
-      | openssl x509 -noout -enddate 2>/dev/null \
-      | cut -d= -f2) || { echo "unknown"; return; }
-    local exp_epoch now_epoch
-    exp_epoch=$(date -d "$not_after" +%s 2>/dev/null \
-             || date -j -f "%b %d %T %Y %Z" "$not_after" +%s 2>/dev/null \
-             || echo "0")
-    now_epoch=$(date +%s)
+    local not_after=$(timeout 8 openssl s_client -connect "${host}:${port}" -servername "$host" </dev/null 2>/dev/null \
+        | openssl x509 -noout -enddate \
+        | cut -d= -f2)
+    # perl parses RFC‑822 style dates irrespective of locale
+    local exp_epoch=$(perl -MTime::Piece -e 'print Time::Piece::strptime($ARGV[0], "%b %d %H:%M:%S %Y %Z")->epoch' "$not_after")
+    local now_epoch=$(date +%s)
     echo $(( (exp_epoch - now_epoch) / 86400 ))
 }
 
@@ -190,6 +185,13 @@ if curl --version 2>&1 | grep -qiE "HTTP2|nghttp2"; then
 else
     CURL_H2=0
     warn "curl was not built with HTTP/2 support; APNs protocol probe (1.5) will be skipped"
+fi
+
+# use gtimeout if it's available.
+if command -v gtimeout >/dev/null; then
+    alias timeout='gtimeout'
+elif ! command -v timeout >/dev/null; then
+    die 1 "'timeout' is required but not installed. Install coreutils (brew install coreutils)."
 fi
 
 # ── §1  APNs ──────────────────────────────────────────────────────────────────
