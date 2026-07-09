@@ -87,7 +87,7 @@ nginz:
         endpoints:
           backendURL: "https://nginz-https.${d}"
           backendWSURL: "https://nginz-ssl.${d}"
-          blackListURL: "https://clientblacklist.${d}/prod"
+          blackListURL: "https://clientblacklist.wire.com/prod"
           teamsURL: "https://teams.${d}"
           accountsURL: "https://account.${d}"
           websiteURL: "https://${d}"
