@@ -12,8 +12,8 @@ ERR_IDP_NOT_FOUND=5
 ERR_INVALID_IDP_FILE=6
 ERR_API_ERROR=7
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_FILE="${LOG_FILE:-${SCRIPT_DIR}/multi-ingress-sso.log}"
+# SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# LOG_FILE="${LOG_FILE:-${SCRIPT_DIR}/multi-ingress-sso.log}"
 WIRE_API_VERSION="${WIRE_API_VERSION:-v16}"
 WIRE_VERIFICATION_CODE="${WIRE_VERIFICATION_CODE:-aGVsbG8}"
 
@@ -120,9 +120,11 @@ get_auth_token() {
   fi
 
   local auth_response
+  # https://staging-nginz-https.zinfra.io/v16/api/swagger-ui/#/default/login
   http_code=$(curl_to_file "$NGINZ_HOST/login" "$file" \
       -H "Content-Type: application/json" \
-      -d "{\"email\":\"$team_admin\",\"password\":\"$team_password\"}")
+      -d "{\"email\":\"$team_admin\",\"password\":\"$team_password\",\"verification_code\":\"$WIRE_VERIFICATION_CODE\"}" \
+      )
 
   #echo "HTTP Code: $http_code" >&2
 
@@ -157,6 +159,9 @@ curl_idp() {
   local token="$1"
   local tmp_file="$TMP_DIR/idp.json"
   
+  # empty the file before writing to it
+  > "$tmp_file"
+
   http_code=$(curl_to_file "$API_URL/identity-providers" "$tmp_file" \
       -H "Authorization: Bearer $token" \
       -H "Accept: application/json" \
@@ -178,7 +183,7 @@ curl_idp() {
   local idp_json
   idp_json=$(cat "$tmp_file")
 
-  print_providers "$tmp_file"
+  print_providers "$idp_json"
 }
 
 set_idp() {
@@ -219,7 +224,9 @@ set_idp() {
     echo "Error: An identity provider for the domain '$domain' already exists." >&2
     return $ERR_IDP_NOT_FOUND
   fi
-  # if [[ "$http_code" -ne 200 && "$http_code" -ne 201 ]]; then
+
+  # success code: 201 Created
+  # https://staging-nginz-https.zinfra.io/v16/api/swagger-ui/#/default/idp-create
   if [[ "$http_code" -ne 201 ]]; then
     echo "Error: Failed to set IDP information. HTTP status code: $http_code" >&2
     return $ERR_API_ERROR

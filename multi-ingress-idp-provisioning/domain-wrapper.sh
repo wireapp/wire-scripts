@@ -2,7 +2,8 @@
 
 set -o pipefail
 
-PROVISIONER_SCRIPT="idp-provisioner.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROVISIONER_SCRIPT="${SCRIPT_DIR}/idp-provisioner.sh"
 
 check_dependencies() {
   if [[ ! -f "$PROVISIONER_SCRIPT" ]]; then

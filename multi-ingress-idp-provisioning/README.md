@@ -46,11 +46,11 @@ Example:
 
 ## Authentication
 
-Before making any api call, this script authenticates using provided team credentials. The successful authentication response is sotored in temporary file. The script reuses the access_token for subsequent requests or and automatically obtains a new one when the existing token expires.
+Before making any api call, this script authenticates using provided team credentials. The successful authentication response is stored in a temporary file. The script reuses the access_token for subsequent requests or automatically obtains a new one when the existing token expires.
 
 ## Tmp folder
 
-By default, this script stores temporairy files in the system's `/tmp`. You can override this location by setting the TMP_DIR env.
+By default, this script stores temporary files in the system's `/tmp`. You can override this location by setting the TMP_DIR env.
 
 ## domain-wrapper.sh
 
