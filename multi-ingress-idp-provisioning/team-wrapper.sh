@@ -60,10 +60,15 @@ set_idps() {
 }
 
 usage(){
-    echo "Usage: $0 set <teams_json_file> <idp_domains_location>" >&2
-    echo "  <teams_json_file> is a JSON file containing an array of team objects with 'username' and 'password' fields." >&2
-    echo "  <idp_domains_location> is the directory containing the IDP metadata files for each domain. Each file should be named as '<domain>.xml'." >&2
-    echo "  Example: $0 set teams.json ./idp_domains" >&2
+    echo "Usage: 
+      export NGINZ_HOST=https://nginz-https.example.com
+      $0 set <teams_json_file> <idp_domains_location>
+
+      <teams_json_file> is a JSON file containing an array of team objects with 'username' and 'password' fields.
+      <idp_domains_location> is the directory containing the IDP metadata files for each domain. Each file should be named as '<domain>.xml'.
+
+      Example: $0 set teams.json ./idp_domains" >&2
+
     exit $ERR_INVALID_ARGS
 }
 

@@ -180,10 +180,7 @@ curl_idp() {
   fi
 
   # read the JSON content from the file
-  local idp_json
-  idp_json=$(cat "$tmp_file")
-
-  print_providers "$idp_json"
+  print_providers "$tmp_file"
 }
 
 set_idp() {
@@ -220,15 +217,36 @@ set_idp() {
       -X POST \
       --data-binary "@$idp_metadata_file")
 
+  # https://wearezeta.atlassian.net/wiki/spaces/PAD/pages/1883472049/2025-05-12+RFC+Default+SSO+flow+for+team+by+host+domain#IdPs-with-domains
+  # 409 was the response code for "Conflict" when an identity provider for the domain already exists.
+  # In server v5.34, the responsecode is 400
   if [[ "$http_code" -eq 409 ]]; then
     echo "Error: An identity provider for the domain '$domain' already exists." >&2
     return $ERR_IDP_NOT_FOUND
+  fi
+
+  if [[ "$http_code" -eq 403 ]]; then
+    echo "Error: Bad request" >&2
+    echo "" >&2
+    # read the response body for more details
+    if [[ -s "$idp_json" ]]; then
+      echo "Response body: $(cat "$idp_json")" >&2
+    else
+      echo "Unknown error occurred. No response body received." >&2
+    fi
+    echo "" >&2
+    return $ERR_INVALID_IDP_FILE
   fi
 
   # success code: 201 Created
   # https://staging-nginz-https.zinfra.io/v16/api/swagger-ui/#/default/idp-create
   if [[ "$http_code" -ne 201 ]]; then
     echo "Error: Failed to set IDP information. HTTP status code: $http_code" >&2
+    if [[ -s "$idp_json" ]]; then
+      echo "Response body: $(cat "$idp_json")" >&2
+    else
+      echo "Unknown error occurred. No response body received." >&2
+    fi
     return $ERR_API_ERROR
   fi
 
@@ -302,11 +320,13 @@ print_providers(){
 
 usage() {  
   echo "Usage: 
+    export NGINZ_HOST=https://nginz-https.example.com
     $0 get <team_admin> <team_password>
     $0 set <team_admin> <team_password> <domain> <idp_metadata_file>
 
     <domain> is the domain name for which the IDP is being set. <domain> does not content service name such as 'nginz-https' or 'spar'. It is the domain name that will be used for SSO login.
     For example, if your SSO login URL is 'https://nginz-https.example.com/sso', then the domain is 'example.com'.
+    
     Examples:
       $0 get admin@example.com secret
       $0 set admin@example.com secret nginz-https.example.com ./idp.xml

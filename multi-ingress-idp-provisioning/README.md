@@ -6,6 +6,8 @@ Provisioning IdP for teams in Mobtown deployment
 
 - Multi-ingress SSO configuration
 - Teams credentials
+- Trust IDPSSODescriptor's certifiate. You should manage a list of trusted certifiates by specifying its **SHA-1 fingerprint** in a list in spar's configuration
+For further information, please visit: https://github.com/wireapp/wire-server/blob/1fcf6fed794f5b18d1bee2016f77ef11f864e14f/docs/src/developer/reference/config-options.md#idp-certificate-fingerprint-allowlist 
 
 ## Dependencies
 
@@ -39,6 +41,7 @@ The set subcommand accepts the team credentials and two additional parameters:
 Example:
 
 ```
+export NGINZ_HOST=https://nginz-https.example.com
 ./idp-provisioner get team-a team-a-password
 ./idp-provisioner set team-a team-a-password blueberry.domain.com blueberry.domain.com.xml
 
@@ -67,6 +70,7 @@ The script assumes that each metadata file is named after its corresponding doma
 Example:
 
 ```
+export NGINZ_HOST=https://nginz-https.example.com
 ./domain-wrapper.sh set team-a team-a-password ./idps
 
 ```
@@ -85,6 +89,7 @@ Team credentials are stored in a JSON file to avoid issues with special characte
 Example:
 
 ```
+export NGINZ_HOST=https://nginz-https.example.com
 ./team-wrapper.sh set ./teams/teams.json ./idps
 
 ```

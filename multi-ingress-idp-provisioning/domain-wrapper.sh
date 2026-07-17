@@ -47,9 +47,11 @@ set_idps() {
 
 usage() {  
   echo "Usage: 
+    export NGINZ_HOST=https://nginz-https.example.com
     $0 set <team_admin> <team_password> <idp_domains_location>
 
     <idp_domains_location> is the directory containing the IDP metadata files for each domain. Each file should be named as '<domain>.xml'.
+    
     For example, if your SSO login URL is 'https://nginz-https.example.com/sso', then the file should be named 'example.com.xml'.
     Examples:
       $0 set"
