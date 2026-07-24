@@ -276,13 +276,25 @@ curl_to_file() {
   local file="$2"
   shift 2
 
+  local curl_args=(
+    --silent
+    --show-error
+    --write-out "%{http_code}"
+    --output "$file"
+  )
+
+  if [[ "$CURL_INSECURE" == "true" ]]; then
+    curl_args+=(--insecure)
+  fi
+
+  if [[ -n "$CURL_HOST_HEADER" ]]; then
+    curl_args+=(-H "Host: $CURL_HOST_HEADER")
+  fi
+
   http_code=$(curl \
-        --silent \
-        --show-error \
-        --write-out "%{http_code}" \
-        --output "$file" \
-        "$url" \
-        "$@"
+    "${curl_args[@]}" \
+    "$url" \
+    "$@"
   )
 
   curl_rc=$?
@@ -315,7 +327,7 @@ print_providers(){
         ]
     )
     | @tsv
-' $providers | column -t -s $'\t'
+' $providers
 }
 
 usage() {  

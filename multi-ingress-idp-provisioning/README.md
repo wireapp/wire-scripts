@@ -93,3 +93,44 @@ export NGINZ_HOST=https://nginz-https.example.com
 ./team-wrapper.sh set ./teams/teams.json ./idps
 
 ```
+
+## Running scripts in wire adminhost container
+
+When running these scripts from `d bash` environement, you may use `kubectl port-forward` to expose the `nginz` service locally. In that setup, you may encounter a few common issues
+
+- The url uses `localhost` instead of https://nginz-https.example.com
+- Self-signed certifiate
+
+You should export two additional envs:
+
+- NGINZ_HOST=https://localhost
+- CURL_INSECURE=true
+- CURL_HOST_HEADER=nginz-https.example.com
+
+For instance:
+
+```bash
+# wire adminhost container
+
+kubectl port-forward svc/ingress-nginx-controller-controller 443:443
+
+# ctrl + z
+# bg
+# disown
+
+export NGINZ_HOST=https://localhost
+export CURL_INSECURE=true
+export CURL_HOST_HEADER=nginz-https.domain1.com
+
+./team-wrapper.sh get ./teams/teams.json ./idps
+Team admin: team-admin@domain1.com
+Info: Auth token is still valid. Using cached token.
+Handling connection for 443
+handle	domain name	issuer
+IdP 1	nginz-https.domain1.com	https://saml.domain1.com/saml2/idp/metadata.php
+IdP 2	nginz-https.domain2.com	https://saml.domain2.com/realms/master
+
+
+# kill port-forward process
+```
+
