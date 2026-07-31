@@ -63,8 +63,10 @@ Add/check this for ${d} in wire-server values:
 
 galley:
   config:
-    multiIngress:
-      ${d}: https://account.${d}/conversation-join/
+    settings:
+      conversationCodeURI: null
+      multiIngress:
+        ${d}: https://account.${d}/conversation-join/
 
 cargohold:
   config:
@@ -134,9 +136,15 @@ check_wire_server() {
       && ok "cannon additional_external_env_domains contains $d" \
       || fail "add $d to cannon.nginx_conf.additional_external_env_domains"
 
-    [[ "$(yaml_get ".galley.config.multiIngress.\"$d\"" "$WIRE_VALUES")" == "https://account.${d}/conversation-join/" ]] \
-      && ok "galley.config.multiIngress for $d" \
-      || fail "add galley.config.multiIngress.\"$d\": https://account.${d}/conversation-join/"
+    if yq -e 'galley.config.settings.conversationCodeURI? != null' "$WIRE_VALUES" >/dev/null 2>&1; then
+      fail "remove galley.config.settings.conversationCodeURI; use .galley.config.settings.multiIngress instead"
+    else
+      ok "galley.config.settings.conversationCodeURI absent"
+    fi
+
+    [[ "$(yaml_get ".galley.config.settings.multiIngress.\"$d\"" "$WIRE_VALUES")" == "https://account.${d}/conversation-join/" ]] \
+      && ok "galley.config.settings.multiIngress for $d" \
+      || fail "add galley.config.settings.multiIngress.\"$d\": https://account.${d}/conversation-join/"
 
     [[ "$(yaml_get ".cargohold.config.aws.multiIngress.\"nginz-https.${d}\"" "$WIRE_VALUES")" == "https://assets.${d}" ]] \
       && ok "cargohold multiIngress for $d" \
