@@ -1,0 +1,10 @@
+[
+  {
+    "username": "mi-sso@dev.local",
+    "password": "******"
+  },
+  {
+    "username": "multi-ingress@dev.local",
+    "password": "******"
+  }
+]
