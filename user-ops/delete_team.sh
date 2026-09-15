@@ -13,18 +13,10 @@ ERR_INVALID_IDP_FILE=6
 ERR_API_ERROR=7
 
 # SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# LOG_FILE="${LOG_FILE:-${SCRIPT_DIR}/multi-ingress-sso.log}"
 WIRE_API_VERSION="${WIRE_API_VERSION:-v14}"
 WIRE_VERIFICATION_CODE="${WIRE_VERIFICATION_CODE:-aGVsbG8}"
 
 # NGINZ_HOST for the NGINZ service. This can be overridden by setting the NGINZ_HOST environment variable.
-# This URL is used to do authentication and to retrieve the list of identity providers (IDPs) for a given team.
-# In multi-ingress setups, A team's administrator can use any domain for authentication or listing Idp.
-# But for adding an Idp for a team, we need to use specific domain url.
-# For example, if the team is using 'https://nginz-https.example.com/sso' for SSO login,
-# then the domain is 'example.com' 
-# and the URL for adding Idp is 'https://nginz-https.example.com/v16/identity-providers?api_version=v2'.
-
 NGINZ_HOST="${NGINZ_HOST:-https://nginz-https.example.com}"
 
 API_URL="$NGINZ_HOST/$WIRE_API_VERSION"
@@ -43,7 +35,6 @@ check_dependencies() {
   done
 }
 
-
 get_auth_token() {
   local team_admin="$1"
   local team_password="$2"
@@ -52,20 +43,6 @@ get_auth_token() {
   local file="$TMP_DIR/$team_admin-auth_response.json"
 
   local token
-  # token=$(get_auth_token_from_last_request "$file")
-
-  # if [[ $? -eq $SUCCESS ]]; then
-  #   echo "$token"
-  #   return $SUCCESS
-  # else
-  #   echo "Info: Auth token not found or expired. Requesting new token..." >&2
-  #   echo "Info: Using team_admin: $team_admin" >&2
-  # fi
-
-  # if [[ -z "$team_admin" || -z "$team_password" ]]; then
-  #   echo "Error: Missing required arguments for authentication." >&2
-  #   exit $ERR_INVALID_ARGS
-  # fi
 
   local auth_response
   # https://staging-nginz-https.zinfra.io/v16/api/swagger-ui/#/default/login
