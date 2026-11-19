@@ -4,6 +4,7 @@ set -euo pipefail
 WIRE_VALUES=""
 MAIN_DOMAIN=""
 NGINX_VALUES=""
+# Change this value if the installation uses a different namespace.
 NAMESPACE="default"
 CHECK_NGINX=false
 CREATE_NGINX_VALUES=false
@@ -57,7 +58,7 @@ but never written; missing main-domain settings also require a manual fix.
 Checks with repairable missing values print a command to rerun with --write.
 
 Optional nginx-ingress-services action (choose at most one):
-  --check-nginx --nginx-values FILE [--namespace NS]
+  --check-nginx --nginx-values FILE
   --create-nginx-values --nginx-values FILE
 
 --check-nginx and --create-nginx-values are mutually exclusive.
@@ -99,7 +100,6 @@ while [[ $# -gt 0 ]]; do
     --create-nginx-values) CREATE_NGINX_VALUES=true; shift ;;
     --write|--write-wire-server) WRITE_WIRE_SERVER=true; shift ;;
     --debug) DEBUG=true; shift ;;
-    -n|--namespace) require_value '--namespace (-n)' "${2-}"; NAMESPACE="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     -*) usage_error "unknown option: $1" ;;
     *) set_multi_domain "$1"; shift ;;
@@ -405,16 +405,34 @@ write_wire_server() {
 }
 
 slug() {
-  echo "$1" | sed 's/\..*$//' | tr -cd '[:alnum:]-' | tr '[:upper:]' '[:lower:]'
+  local name="${1,,}" label
+  local -a labels
+  [[ "$name" != .* && "$name" != *. && "$name" != *..* ]] \
+    || usage_error "invalid domain: $1"
+  IFS='.' read -r -a labels <<< "$name"
+  for label in "${labels[@]}"; do
+    [[ ${#label} -le 63 && "$label" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]] \
+      || usage_error "invalid domain label in: $1"
+  done
+  # Within valid labels, doubled hyphens are distinct from dot separators.
+  name="${name//-/--}"
+  name="${name//./-}"
+  # The shorter release prefix leaves 41 characters for the full domain.
+  (( ${#name} <= 41 )) \
+    || usage_error "domain identifier exceeds the name length limit; configure this domain manually"
+  if (( ${#name} > 30 )); then
+    echo "WARNING: Helm's name limit requires the shortened release name ing-ngx-svc-${name}." >&2
+  fi
+  printf '%s' "$name"
 }
 
 check_main_nginx_exists() {
   need kubectl
 
-  echo "Checking Kubernetes ingress for main domain: $MAIN_DOMAIN"
+  echo "Checking Kubernetes ingress for main domain: $MAIN_DOMAIN in namespace $NAMESPACE"
 
-  if kubectl get ingress -A -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{" "}{range .spec.rules[*]}{.host}{" "}{end}{"\n"}{end}' \
-    | grep -F "$MAIN_DOMAIN" >/dev/null; then
+  if kubectl get ingress -n "$NAMESPACE" -o jsonpath='{range .items[*].spec.rules[*]}{.host}{"\n"}{end}' \
+    | grep -Fx "nginz-https.${MAIN_DOMAIN}" >/dev/null; then
     ok "main nginx-ingress-services ingress appears to exist for $MAIN_DOMAIN"
   else
     fail "main nginx-ingress-services ingress not found for $MAIN_DOMAIN"
@@ -490,16 +508,20 @@ check_nginx_values() {
     return
   fi
 
-  local s
+  local s release
   s="$(slug "$MULTI_DOMAIN")"
+  release="nginx-ingress-services-${s}"
+  if (( ${#s} > 30 )); then
+    release="ing-ngx-svc-${s}"
+  fi
 
-  [[ "$(yaml_get '.ingressName' "$NGINX_VALUES")" ]] \
+  [[ "$(yaml_get '.ingressName' "$NGINX_VALUES")" == "$s" ]] \
     && ok "ingressName" \
-    || fail "set ingressName: someName"
+    || fail "set ingressName: $s"
 
-  [[ "$(yaml_get '.nameOverride' "$NGINX_VALUES")" ]] \
+  [[ "$(yaml_get '.nameOverride' "$NGINX_VALUES")" == "nginx-multi-ingress-${s}" ]] \
     && ok "nameOverride" \
-    || fail "set nameOverride: someNameOverride"
+    || fail "set nameOverride: nginx-multi-ingress-${s}"
 
   [[ "$(yaml_get '.config.dns.base' "$NGINX_VALUES")" == "$MULTI_DOMAIN" ]] \
     && ok "config.dns.base" \
@@ -541,7 +563,7 @@ check_nginx_values() {
 
 Deploy command for this domain:
 
-helm upgrade --install nginx-ingress-services-${s} charts/nginx-ingress-services \\
+helm upgrade --install ${release} charts/nginx-ingress-services \\
   -n ${NAMESPACE} \\
   -f ${NGINX_VALUES} \\
   --set-file secrets.tlsWildcardCert=values/nginx-ingress-services/${s}-cert.pem \\
