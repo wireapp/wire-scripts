@@ -1,0 +1,40 @@
+<md:EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+    xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+    entityID="https://blueberry.domain.com.pyd.io/realms/master">
+    <md:IDPSSODescriptor WantAuthnRequestsSigned="true"
+        protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+        <md:KeyDescriptor use="signing">
+            <ds:KeyInfo>
+                <ds:KeyName>xxxxxxxxxx</ds:KeyName>
+                <ds:X509Data>
+                    <ds:X509Certificate>
+                        MIICmzCCAYMCBgGKl5/t3DANBgkqhkiG9wxxxxxxxYDVQQDDAZtYXN0ZXIwHhcNMjMwOTE1MDY1NDE1WhcNMzMwOTE1MDY1NTU1WjARMQ8wDQYDVQQDDAZtYXN0ZXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDnmO0E0B5A+O0rtcj9CjxtKEIwRPgSoWNqSHpYgFK1uzAmaVcbTX1kKPqlv54+g0JPofQc1sNZM5lKspzcGFtIYG+coFMvBPWXODOsXrvUCLKSK/AirNXvHUnC9Hz63ThO3hPKP/soTySaM1CQrrwdCWo6g8LL8D3rKD6lHU8AkdSpqhIlyjY1p8I75H4efvyQkTym3v2baqxAi6MWPqdw9p270qsglM2BuQUd9eaEqM+i/brdKAJIx5dgsD2CVr9UYpOjtOflhK9xee4JWHti8gc5BQOQblueS4dLk8NpdSAEsoNSNPGGVgXvpmg0uGIcJXYfV0ozpgBQ+8NZKg9pAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAEmbqco/SkMN+wsuYYeh+nRLpzEECOQIe0iGw+4hVmGcBevVKcKtaiR4xy4b/S+qrmY9+xTp7TGTX3QYc+u5hiTV8YaZm5lJDEA9vwA/K+57qAAIEtygzNAenps9cqUY6fUgtgA6YeXrUz8UAofiWJHeggRo3aMuwpwfwgwO3JkMjHXEeyPTPgvi2huvUZhdE42fSEJA6wwAb6yMftMncuQF1iKdl6G6D1e1LWkgsWhFMjiZi7b7CE5kdW5Ng0ga7lAV6FPivf38A3jPwiUyRKEUnSk8uwrpKpKAqaLWb0cHeZfVn5h3IrxFWHN3CZ/zgmu+ofqL7DSgQo/OBm3tkM0=</ds:X509Certificate>
+                </ds:X509Data>
+            </ds:KeyInfo>
+        </md:KeyDescriptor>
+        <md:ArtifactResolutionService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
+            Location="https://blueberry.domain.com.pyd.io/realms/master/protocol/saml/resolve"
+            index="0"></md:ArtifactResolutionService>
+        <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+            Location="https://blueberry.domain.com.pyd.io/realms/master/protocol/saml"></md:SingleLogoutService>
+        <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+            Location="https://blueberry.domain.com.pyd.io/realms/master/protocol/saml"></md:SingleLogoutService>
+        <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"
+            Location="https://blueberry.domain.com.pyd.io/realms/master/protocol/saml"></md:SingleLogoutService>
+        <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
+            Location="https://blueberry.domain.com.pyd.io/realms/master/protocol/saml"></md:SingleLogoutService>
+        <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</md:NameIDFormat>
+        <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat>
+        <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</md:NameIDFormat>
+        <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>
+        <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+            Location="https://blueberry.domain.com.pyd.io/realms/master/protocol/saml"></md:SingleSignOnService>
+        <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+            Location="https://blueberry.domain.com.pyd.io/realms/master/protocol/saml"></md:SingleSignOnService>
+        <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
+            Location="https://blueberry.domain.com.pyd.io/realms/master/protocol/saml"></md:SingleSignOnService>
+        <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"
+            Location="https://blueberry.domain.com.pyd.io/realms/master/protocol/saml"></md:SingleSignOnService>
+    </md:IDPSSODescriptor>
+</md:EntityDescriptor>
