@@ -208,7 +208,7 @@ set_idp() {
   token=$(get_auth_token "$team_admin" "$team_password")
 
   # user domain to construct the API URL for setting the IDP
-  domain="https://nginz-https.$domain/$WIRE_API_VERSION"
+  domain="$NGINZ_HOST/$WIRE_API_VERSION"
 
   http_code=$(curl_to_file "$domain/identity-providers?api_version=v2" "$idp_json" \
       -H "Authorization: Bearer $token" \
