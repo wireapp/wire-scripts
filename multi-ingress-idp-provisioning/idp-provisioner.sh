@@ -192,7 +192,7 @@ set_idp() {
 
   local team_admin="$1"
   local team_password="$2"
-  local domain="$3"
+  local de="$3"
   local idp_metadata_file="$4"
   local idp_json="$TMP_DIR/set_idp_response.json"
 
@@ -207,10 +207,10 @@ set_idp() {
   # get auth token
   token=$(get_auth_token "$team_admin" "$team_password")
 
-  # user domain to construct the API URL for setting the IDP
-  domain="$NGINZ_HOST/$WIRE_API_VERSION"
+  local idp_domain="${de#nginz-https.}"
+  CURL_HOST_HEADER="nginz-https.$idp_domain"
 
-  http_code=$(curl_to_file "$domain/identity-providers?api_version=v2" "$idp_json" \
+  http_code=$(curl_to_file "$NGINZ_HOST/$WIRE_API_VERSION/identity-providers?api_version=v2" "$idp_json" \
       -H "Authorization: Bearer $token" \
       -H "Content-Type: application/xml" \
       -H "Accept: */*" \
@@ -221,7 +221,7 @@ set_idp() {
   # 409 was the response code for "Conflict" when an identity provider for the domain already exists.
   # In server v5.34, the responsecode is 400
   if [[ "$http_code" -eq 409 ]]; then
-    echo "Error: An identity provider for the domain '$domain' already exists." >&2
+    echo "Error: An identity provider for the domain '$idp_domain' already exists." >&2
     return $ERR_IDP_NOT_FOUND
   fi
 
@@ -262,7 +262,7 @@ set_idp() {
 
   # 
   if [[ "$http_code" -eq 201 ]]; then
-    echo "Successfully created a new identity provider for domain '$domain'."
+    echo "Successfully created a new identity provider for domain '$idp_domain'."
   fi
 
   print_providers "$idp_json"
